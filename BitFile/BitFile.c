@@ -134,9 +134,8 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     }
 
     if (currentByteLen != 0) {
-        currentByte = (uint8_t)(currentByte << (8 - currentByteLen));
-        fputc(currentByte, bfile->inner);
-        bufferIndex += 8;
+        bfile->bufferLen = currentByteLen;
+        bfile->buffer = currentByte;
     }
 
     bfile->bitPos += len;
