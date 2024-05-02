@@ -142,6 +142,27 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     return bufferIndex;
 }
 
+size_t BitFile_readBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
+    fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    if (bfile->bitPos % 8 == 0) {
+        size_t bytesRead = fread(buffer, sizeof(uint8_t), len, bfile->inner);
+        bfile->bitPos += bytesRead * 8;
+        return bytesRead;
+    } else {
+        return 0;
+    }
+}
+size_t BitFile_writeBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
+    fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    if (bfile->bitPos % 8 == 0) {
+        size_t bytesWrite = fwrite(buffer, sizeof(uint8_t), len, bfile->inner);
+        bfile->bitPos += bytesWrite * 8;
+        return bytesWrite;
+    } else {
+        return 0;
+    }
+}
+
 void BitFile_padding(struct BitFile *bfile) {
     if (bfile->bitPos % 8 != 0) {
         uint8_t paddingCount = (uint8_t)(8 - (bfile->bitPos % 8));
