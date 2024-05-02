@@ -62,6 +62,9 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     }
 
     for (size_t i = 1; i < successBytesCount - 1; i++) {
+        if (bufferIndex >= len) {
+            break;
+        }
         for (uint8_t j = 0; j < 8; j++) {
             buffer[bufferIndex] = (bytesBuffer[i] >> (7 - j)) & 1;
             bufferIndex++;
@@ -83,6 +86,9 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
             uint8_t endingBitsCount = (uint8_t)(len - bufferIndex);
             endingBitsCount = (endingBitsCount >= 8) ? 8 : endingBitsCount;
             for (uint8_t i = 0; i < endingBitsCount; i++) {
+                if (bufferIndex >= len) {
+                    break;
+                }
                 buffer[bufferIndex] =
                     (bytesBuffer[successBytesCount - 1] >> (7 - i)) & 1;
                 bufferIndex++;
