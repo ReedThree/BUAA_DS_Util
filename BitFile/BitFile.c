@@ -43,8 +43,7 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     size_t bufferIndex = 0;
 
     if (bfile->bitPos % 8 != 0) {
-        uint8_t leadingBitsCount =
-            (len >= 8) ? (uint8_t)(8 - (bfile->bitPos % 8)) : (uint8_t)len;
+        uint8_t leadingBitsCount = (uint8_t)(8 - (bfile->bitPos % 8));
 
         for (uint8_t i = 0; i < leadingBitsCount; i++) {
             buffer[bufferIndex] =
@@ -52,8 +51,7 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
             bufferIndex++;
         }
     } else {
-        uint8_t leadingBitsCount =
-            (len >= 8) ? (uint8_t)(8 - (bfile->bitPos % 8)) : (uint8_t)len;
+        uint8_t leadingBitsCount = (len >= 8) ? 8 : (uint8_t)len;
 
         for (uint8_t i = 0; i < leadingBitsCount; i++) {
             buffer[bufferIndex] = (bytesBuffer[0] >> (7 - i)) & 1;
@@ -96,7 +94,24 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
 }
 size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+
     size_t bufferIndex = 0;
+
+    if (bfile->bufferLen > 0) {
+        for (uint8_t i = 0; i < (uint8_t)(8 - bfile->bufferLen); i++) {
+            bfile->buffer =
+                (uint8_t)((bfile->buffer << 1) | buffer[bufferIndex]);
+            bufferIndex++;
+        }
+
+        fputc(bfile->buffer, bfile->inner);
+        bfile->bitPos += (uint8_t)(8 - bfile->bufferLen);
+        bfile->buffer = 0;
+        bfile->bufferLen = 0;
+    }
+
+    size_t remainBits = len - bufferIndex;
+
     if (bfile->bitPos % 8 != 0) {
         int ch = fgetc(bfile->inner);
         if (ch == EOF) {
@@ -138,7 +153,7 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
         bfile->buffer = currentByte;
     }
 
-    bfile->bitPos += len;
+    bfile->bitPos += remainBits;
     return bufferIndex;
 }
 
@@ -165,7 +180,7 @@ size_t BitFile_writeBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
 
 void BitFile_padding(struct BitFile *bfile) {
     if (bfile->bitPos % 8 != 0) {
-        uint8_t paddingCount = (uint8_t)(8 - (bfile->bitPos % 8));
+        uint8_t paddingCount = (uint8_t)(8 - bfile->bufferLen);
         bfile->buffer = (uint8_t)(bfile->buffer << paddingCount);
         bfile->bitPos += paddingCount;
     }

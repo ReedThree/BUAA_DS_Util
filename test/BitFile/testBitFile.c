@@ -107,5 +107,37 @@ int main(void) {
     BitFile_close(bf);
     fclose(f);
 
+    f = fopen("write_twice_5bits.bin", "w");
+    bf = BitFile_create(f);
+
+    uint8_t bits7[5] = {1, 0, 0, 1, 1};
+    BitFile_writeBits(bits7, 5, bf);
+    BitFile_writeBits(bits7, 5, bf);
+    BitFile_close(bf);
+    fclose(f);
+
+    f = fopen("write_twice_5bits.bin", "r");
+    bf = BitFile_create(f);
+
+    uint8_t bits8[5] = {0};
+    BitFile_readBits(bits8, 5, bf);
+
+    printf("11:\n");
+    for (size_t i = 0; i < 5; i++) {
+        printf("%hhu ", bits8[i]);
+    }
+    putchar('\n');
+
+    memset(bits8, 0, 5);
+    BitFile_readBits(bits8, 5, bf);
+    printf("12:\n");
+    for (size_t i = 0; i < 5; i++) {
+        printf("%hhu ", bits8[i]);
+    }
+    putchar('\n');
+
+    BitFile_close(bf);
+    fclose(f);
+
     return 0;
 }
