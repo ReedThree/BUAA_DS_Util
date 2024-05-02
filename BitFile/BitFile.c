@@ -16,6 +16,8 @@ void BitFile_flush(struct BitFile *bfile) {
     if (bfile->bufferLen > 0) {
         BitFile_padding(bfile);
         fputc(bfile->buffer, bfile->inner);
+        bfile->buffer = 0;
+        bfile->bufferLen = 0;
     }
 }
 void BitFile_close(struct BitFile *bfile) {
@@ -98,16 +100,24 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     size_t bufferIndex = 0;
 
     if (bfile->bufferLen > 0) {
-        for (uint8_t i = 0; i < (uint8_t)(8 - bfile->bufferLen); i++) {
+        uint8_t toBuffer = (uint8_t)(8 - bfile->bufferLen);
+        if (toBuffer > len) {
+            toBuffer = (uint8_t)len;
+        }
+        for (uint8_t i = 0; i < toBuffer; i++) {
             bfile->buffer =
                 (uint8_t)((bfile->buffer << 1) | buffer[bufferIndex]);
             bufferIndex++;
+            bfile->bitPos++;
+            bfile->bufferLen++;
         }
-
-        fputc(bfile->buffer, bfile->inner);
-        bfile->bitPos += (uint8_t)(8 - bfile->bufferLen);
-        bfile->buffer = 0;
-        bfile->bufferLen = 0;
+        if (bfile->bufferLen == 8) {
+            fputc(bfile->buffer, bfile->inner);
+            bfile->buffer = 0;
+            bfile->bufferLen = 0;
+        } else {
+            return 0;
+        }
     }
 
     size_t remainBits = len - bufferIndex;
