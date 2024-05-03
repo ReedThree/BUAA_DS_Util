@@ -31,8 +31,10 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     uint8_t *bytesBuffer = (uint8_t *)malloc(bytesToRead * sizeof(uint8_t));
     size_t innerBeginPos = bfile->bitPos / 8;
 
-    if (fseek(bfile->inner, (long)innerBeginPos, SEEK_SET) != 0) {
-        return 0;
+    if (ftell(bfile->inner) != (long)innerBeginPos) {
+        if (fseek(bfile->inner, (long)innerBeginPos, SEEK_SET) != 0) {
+            return 0;
+        }
     }
 
     size_t successBytesCount =
@@ -48,6 +50,9 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
         uint8_t leadingBitsCount = (uint8_t)(8 - (bfile->bitPos % 8));
 
         for (uint8_t i = 0; i < leadingBitsCount; i++) {
+            if (bufferIndex >= len) {
+                break;
+            }
             buffer[bufferIndex] =
                 (bytesBuffer[0] >> (leadingBitsCount - i - 1)) & 1;
             bufferIndex++;
@@ -101,7 +106,9 @@ size_t BitFile_readBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     return bufferIndex;
 }
 size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
-    fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    if (ftell(bfile->inner) != (long)bfile->bitPos / 8) {
+        fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    }
 
     size_t bufferIndex = 0;
 
@@ -145,7 +152,9 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
             bufferIndex++;
         }
 
-        fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+        if (ftell(bfile->inner) != (long)bfile->bitPos / 8) {
+            fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+        }
         fputc(firstByte, bfile->inner);
     }
 
@@ -174,7 +183,9 @@ size_t BitFile_writeBits(uint8_t *buffer, size_t len, struct BitFile *bfile) {
 }
 
 size_t BitFile_readBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
-    fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    if (ftell(bfile->inner) != (long)bfile->bitPos / 8) {
+        fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    }
     if (bfile->bitPos % 8 == 0) {
         size_t bytesRead = fread(buffer, sizeof(uint8_t), len, bfile->inner);
         bfile->bitPos += bytesRead * 8;
@@ -184,7 +195,9 @@ size_t BitFile_readBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
     }
 }
 size_t BitFile_writeBytes(uint8_t *buffer, size_t len, struct BitFile *bfile) {
-    fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    if (ftell(bfile->inner) != (long)bfile->bitPos / 8) {
+        fseek(bfile->inner, (long)bfile->bitPos / 8, SEEK_SET);
+    }
     if (bfile->bitPos % 8 == 0) {
         size_t bytesWrite = fwrite(buffer, sizeof(uint8_t), len, bfile->inner);
         bfile->bitPos += bytesWrite * 8;
